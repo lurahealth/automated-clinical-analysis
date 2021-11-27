@@ -5,9 +5,9 @@ import csv
 import os
 from pathlib import Path
 
-    # Parses file stored at "path" that describes patient ID <> device ID 
-    # relationships. Returns an array of patient IDs and device IDs, such
-    # that patient_id[i] is related to device_id[i]
+# Parses file stored at "path" that describes patient ID <> device ID 
+# relationships. Returns an array of patient IDs and device IDs, such
+# that patient_id[i] is related to device_id[i]
 def parse_ID_relations_file(path):
     patient_ids = []
     device_ids  = []
@@ -21,6 +21,20 @@ def parse_ID_relations_file(path):
     
     return patient_ids, device_ids
 
+# Appends csv file at file_path_to_merge to device_id file in the
+# merged files location
+def append_csv_by_device_id(device_id, file_path_to_merge):
+    merged_filepath = "../lura_files/MERGED-CLINICAL-CSV/device_"
+    merged_file = merged_filepath + device_id + ".csv"
+    with open(file_path_to_merge, mode='r') as new_file:
+        new_csv_data = new_file.read()
+    
+    with open(merged_file, mode='a') as big_file:
+        big_file.write('**********\n')
+        big_file.write(new_csv_data)
+        
+# Search directory and subdirectories for pH receiver data,
+# the device ID files could be in any patient ID subdirectory
 def collect_patient_csv_files(patient_ids, device_ids):
     path = "../lura_files/" # this is bad but easier to test across hardwares
     id_prefix = path + "ble-receiver"
@@ -28,18 +42,25 @@ def collect_patient_csv_files(patient_ids, device_ids):
     for patient_id in patient_ids:
         # search ph receiver directory for all active pH retainers
         for device_id in device_ids:
-            device_id = "LuraHealth" + device_id + ".csv"
+            device_id_file = "LuraHealth" + device_id + ".csv"
             filename = id_prefix + patient_id + "/csv_files/"
-            complete_filename = filename + device_id
-            # print("complete FILENAME: ", complete_filename)
-            patient_dir = os.listdir(id_prefix + patient_id + "/csv_files")
-            print("Patient dir: ", patient_dir)
-            print("Device id: " , device_id)
-            
-            if device_id in patient_dir:
-                # print(complete_filename)
-                print("yeaaah buddy lmao")
-                # do something lol fuck
+            complete_filename = filename + device_id_file
+            full_dir_path = id_prefix + patient_id + "/csv_files/"
+            # If device ID file exists in patient ID directory, collect it
+            patient_dir = os.listdir(full_dir_path)
+            if device_id_file in patient_dir:
+                append_csv_by_device_id(device_id, complete_filename)
+
+def clean_up_csv_formatting(full_file_path):
+    correct_header = "Time,pH,temp,batt,pHmV"
+    current_header = "Time (YYYY-MM-DD HH-MM-SS),pH (calibrated),temp (mv),batt (mv),pH (mv)"
+
+def sort_merged_csv_files_by_date():
+    root_path = "../lura_files/MERGED-CLINICAL-CSV/"
+    files_dir = os.listdir(root_path)
+    for device_file in files_dir:
+        full_file_path = root_path + device_file
+        clean_up_csv_formatting(full_file_path)
 
 
 def main(argv):
@@ -60,6 +81,7 @@ def main(argv):
      print("active devices: ", device_ids)
      
      collect_patient_csv_files(patient_ids, device_ids)
+     sort_merged_csv_files_by_date()
      
 
 if __name__ == "__main__":
