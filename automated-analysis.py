@@ -30,7 +30,6 @@ def append_csv_by_device_id(device_id, file_path_to_merge):
         new_csv_data = new_file.read()
     
     with open(merged_file, mode='a') as big_file:
-        big_file.write('**********\n')
         big_file.write(new_csv_data)
         
 # Search directory and subdirectories for pH receiver data,
@@ -42,7 +41,7 @@ def collect_patient_csv_files(patient_ids, device_ids):
     for patient_id in patient_ids:
         # search ph receiver directory for all active pH retainers
         for device_id in device_ids:
-            device_id_file = "LuraHealth" + device_id + ".csv"
+            device_id_file = "LuraHealth_" + device_id + ".csv"
             filename = id_prefix + patient_id + "/csv_files/"
             complete_filename = filename + device_id_file
             full_dir_path = id_prefix + patient_id + "/csv_files/"
@@ -51,16 +50,28 @@ def collect_patient_csv_files(patient_ids, device_ids):
             if device_id_file in patient_dir:
                 append_csv_by_device_id(device_id, complete_filename)
 
-def clean_up_csv_formatting(full_file_path):
-    correct_header = "Time,pH,temp,batt,pHmV"
+# Need to write to a temp file, delete previous file, and change temp name
+def clean_up_csv_formatting(full_file_path, root_path, device_file):
+    correct_header = "Time,pH,temp,batt,pHmV\n"
     current_header = "Time (YYYY-MM-DD HH-MM-SS),pH (calibrated),temp (mv),batt (mv),pH (mv)"
+    temp_filename = root_path + "TEMP" + device_file
+    # Open both files, dirty and temp
+    with open(full_file_path, mode='r') as dirty_file:
+        with open(temp_filename, mode='a') as temp_file:
+            temp_file.write(correct_header) # give it the right header
+            # Write everything except lines with headers or empty newlines
+            for line in dirty_file:
+                if current_header not in line and line != '\n':
+                    temp_file.write(line)
+                    
+        
 
 def sort_merged_csv_files_by_date():
     root_path = "../lura_files/MERGED-CLINICAL-CSV/"
     files_dir = os.listdir(root_path)
     for device_file in files_dir:
         full_file_path = root_path + device_file
-        clean_up_csv_formatting(full_file_path)
+        clean_up_csv_formatting(full_file_path, root_path, device_file)
 
 
 def main(argv):
