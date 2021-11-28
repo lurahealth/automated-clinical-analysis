@@ -81,7 +81,11 @@ def sort_merged_csv_files_by_date():
     for device_file in files_dir:
         full_file_path = root_path + device_file
         clean_up_csv_formatting(full_file_path, root_path, device_file)
-
+        
+def reset_files():
+    root_path = "../lura_files/MERGED-CLINICAL-CSV/"
+    for file in os.listdir(root_path):
+        os.remove(os.path.join(root_path, file))
 
 def main(argv):
     
@@ -100,7 +104,7 @@ def main(argv):
      print("active patients: ", patient_ids)
      print("active devices: ", device_ids)
      
-     # Add function to refresh / delete files or something, put them in an archive
+     reset_files() # delete old summaries and update with brand new fresh files
      collect_patient_csv_files(patient_ids, device_ids)
      sort_merged_csv_files_by_date()
      
