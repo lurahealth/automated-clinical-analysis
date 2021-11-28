@@ -3,6 +3,8 @@ import argparse
 import sys
 import csv
 import os
+import time
+import pandas as pd
 from pathlib import Path
 
 # Parses file stored at "path" that describes patient ID <> device ID 
@@ -63,9 +65,16 @@ def clean_up_csv_formatting(full_file_path, root_path, device_file):
             for line in dirty_file:
                 if current_header not in line and line != '\n':
                     temp_file.write(line)
+    # use pandas to sort by timestamp, delete CSVs, then write final CSV
+    df = pd.read_csv(temp_filename)
+    df.sort_values(["Time"], inplace=True, ascending=False)
+    os.remove(full_file_path)
+    os.remove(temp_filename)
+    df.to_csv(full_file_path, index=False)
                     
         
-
+# Cleans up file formatting, empty lines, etc then sorts data by timestamp
+# Data is sorted in descending order, i.e. most recent data is at the top
 def sort_merged_csv_files_by_date():
     root_path = "../lura_files/MERGED-CLINICAL-CSV/"
     files_dir = os.listdir(root_path)
@@ -91,6 +100,7 @@ def main(argv):
      print("active patients: ", patient_ids)
      print("active devices: ", device_ids)
      
+     # Add function to refresh / delete files or something, put them in an archive
      collect_patient_csv_files(patient_ids, device_ids)
      sort_merged_csv_files_by_date()
      
