@@ -89,13 +89,12 @@ def reset_files():
 
 def main(argv):
     
-     parser = argparse.ArgumentParser(description="Collects, organizes, and analyzes Lura Health PHSS files. Results are delivered automatically via email.")
+     parser = argparse.ArgumentParser(description="Collects, organizes, and analyzes Lura Health PHSS files. Results are stored in a summary file.")
                                       
      parser.add_argument('patient_file', type=str, help='Path to CSV file for patient ID <> device ID  relations.')
          
      parser.add_argument('email_file', type=str, help='Path to CSV file containing emails that updates should be sent to.')
      
-     parser.add_argument('interval', type=float, help='Interval that analysis and email updates should be performed, in hours. One email will be sent every time an analysis event occurs.') 
     
      args = parser.parse_args()
      
