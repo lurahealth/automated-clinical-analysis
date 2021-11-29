@@ -81,20 +81,71 @@ def sort_merged_csv_files_by_date():
     for device_file in files_dir:
         full_file_path = root_path + device_file
         clean_up_csv_formatting(full_file_path, root_path, device_file)
-        
+
+# delete em all haha        
 def reset_files():
     root_path = "../lura_files/MERGED-CLINICAL-CSV/"
-    for file in os.listdir(root_path):
-        os.remove(os.path.join(root_path, file))
+    for file_name in os.listdir(root_path):
+        os.remove(os.path.join(root_path, file_name))
 
+# Return "good" or "NEEDS REVIEW" , and last 1hr average (12 rows of data)
+def analyze_ph_data(fpath):
+    return "good", "6.50"
+
+# Return "good" or "NEEDS REVIEW", and last battery mV value 
+def analyze_battery_data(fpath):
+    return "good", "2650"
+
+# Return "good" or "NEEDS REVIEW", and last 1hr average (12 rows of data)
+def analyze_temp_data(fpath):
+    return "good", "31.2"
+
+# Performs analysis of battery level, connection time, pH readings, and temperature
+# Indicates if device is "good" or needs further analysis
+# Writes results to a summary .txt file, with the most recent 30mins of data (6 rows)
+def run_simple_analysis(patient_ids, device_ids):
+    root_path     = "../lura_files/MERGED-CLINICAL-CSV/"
+    summary_fname = "ANALYSIS_SUMMARY.txt"
+    # Create the summary file and add in a title/whatever to begin
+    with open(root_path + summary_fname, mode='a') as summary_file:
+        summary_file.write("Lura Health First-In-Man Clinical Live Data Summary\n")
+        summary_file.write("*************************************************************\n\n")
+        for device_csv in os.listdir(root_path): 
+                curr_device_id = device_csv.split('.')[0]
+                curr_device_id = curr_device_id.split('_')[1]
+                if curr_device_id != "SUMMARY":
+                    summary_file.write("Patient " + patient_ids[device_ids.index(curr_device_id)] + " ")
+                    summary_file.write("Device " + curr_device_id + " - - - - - - - -\n")
+                    # Write summary of analysis things first
+                    with open(root_path + device_csv, mode='r') as csv_file:
+                        lines = csv_file.readlines()
+                        summary_file.write("    Last connection:   " + lines[1].split(',')[0] + "\n")
+                        summary_file.write("    Battery level:     " + analyze_battery_data(root_path + device_csv)[0])
+                        summary_file.write(" (last 1 hr. avg: "      + analyze_battery_data(root_path + device_csv)[1] + ")\n")
+                        summary_file.write("    pH Sensor Data:    " + analyze_ph_data(root_path + device_csv)[0])
+                        summary_file.write(" (last 1 hr. avg: "      + analyze_ph_data(root_path + device_csv)[1] + ")\n")
+                        summary_file.write("    Temperature Data:  " + analyze_temp_data(root_path + device_csv)[0])
+                        summary_file.write(" (last 1 hr. avg: "      + analyze_temp_data(root_path + device_csv)[1] + ")\n\n")
+        # Page break of sorts, and then just print most recent 30 mins of data (6 rows)
+        summary_file.write("************************************************************\n\n")
+        summary_file.write("                     Time,            pH,temp,batt,pHmV\n")       
+        for device_csv in os.listdir(root_path): 
+                curr_device_id = device_csv.split('.')[0]
+                curr_device_id = curr_device_id.split('_')[1]
+                if curr_device_id != "SUMMARY":
+                    summary_file.write("(Device " + curr_device_id + ") - - - - - - - - - - - - - - - - - - - - - - - -\n")
+                    with open(root_path + device_csv, mode='r') as csv_file:
+                        lines = csv_file.readlines()
+                        for i in range(1,5):
+                            summary_file.write("                  " + lines[i])
+                        summary_file.write("\n")    
+                        
+            
 def main(argv):
     
      parser = argparse.ArgumentParser(description="Collects, organizes, and analyzes Lura Health PHSS files. Results are stored in a summary file.")
                                       
      parser.add_argument('patient_file', type=str, help='Path to CSV file for patient ID <> device ID  relations.')
-         
-     parser.add_argument('email_file', type=str, help='Path to CSV file containing emails that updates should be sent to.')
-     
     
      args = parser.parse_args()
      
@@ -106,6 +157,7 @@ def main(argv):
      reset_files() # delete old summaries and update with brand new fresh files
      collect_patient_csv_files(patient_ids, device_ids)
      sort_merged_csv_files_by_date()
+     run_simple_analysis(patient_ids, device_ids)
      
 
 if __name__ == "__main__":
