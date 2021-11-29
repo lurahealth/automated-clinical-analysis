@@ -87,18 +87,46 @@ def reset_files():
     root_path = "../lura_files/MERGED-CLINICAL-CSV/"
     for file_name in os.listdir(root_path):
         os.remove(os.path.join(root_path, file_name))
+        
+def return_average(lines, col):
+    average = 0
+    for i in range(1, 13):
+        average = average + float(lines[i].split(',')[col])
+    average = average / 12
+    return round(average,2)
+
+def check_threshold(lines, low_thresh, high_thresh, col):
+    if float(lines[1].split(',')[col]) > low_thresh and float(lines[1].split(',')[col]) < high_thresh:
+        return "good"
+    else:
+        return "NEEDS REVIEW"
 
 # Return "good" or "NEEDS REVIEW" , and last 1hr average (12 rows of data)
-def analyze_ph_data(fpath):
-    return "good", "6.50"
+def analyze_ph_data(lines):
+    pH_col = 1
+    pH_high_thresh = 10
+    pH_low_thresh = 3
+    good_or_bad = check_threshold(lines, pH_low_thresh, pH_high_thresh, pH_col)
+    hour_avg = return_average(lines, pH_col)
+    return good_or_bad, hour_avg
 
 # Return "good" or "NEEDS REVIEW", and last battery mV value 
-def analyze_battery_data(fpath):
-    return "good", "2650"
+def analyze_battery_data(lines):
+    batt_col = 3
+    batt_high_thresh = 3000
+    batt_low_thresh = 2100
+    good_or_bad = check_threshold(lines, batt_low_thresh, batt_high_thresh, batt_col)
+    hour_avg = return_average(lines, batt_col)
+    return good_or_bad, hour_avg
 
 # Return "good" or "NEEDS REVIEW", and last 1hr average (12 rows of data)
-def analyze_temp_data(fpath):
-    return "good", "31.2"
+def analyze_temp_data(lines):
+    temp_col = 2
+    temp_high_thresh = 40
+    temp_low_thresh = 12
+    good_or_bad = check_threshold(lines, temp_low_thresh, temp_high_thresh, temp_col)
+    hour_avg = return_average(lines, temp_col)
+    return good_or_bad, hour_avg
 
 # Performs analysis of battery level, connection time, pH readings, and temperature
 # Indicates if device is "good" or needs further analysis
@@ -120,12 +148,12 @@ def run_simple_analysis(patient_ids, device_ids):
                     with open(root_path + device_csv, mode='r') as csv_file:
                         lines = csv_file.readlines()
                         summary_file.write("    Last connection:   " + lines[1].split(',')[0] + "\n")
-                        summary_file.write("    Battery level:     " + analyze_battery_data(root_path + device_csv)[0])
-                        summary_file.write(" (last 1 hr. avg: "      + analyze_battery_data(root_path + device_csv)[1] + ")\n")
-                        summary_file.write("    pH Sensor Data:    " + analyze_ph_data(root_path + device_csv)[0])
-                        summary_file.write(" (last 1 hr. avg: "      + analyze_ph_data(root_path + device_csv)[1] + ")\n")
-                        summary_file.write("    Temperature Data:  " + analyze_temp_data(root_path + device_csv)[0])
-                        summary_file.write(" (last 1 hr. avg: "      + analyze_temp_data(root_path + device_csv)[1] + ")\n\n")
+                        summary_file.write("    Battery level:     " + analyze_battery_data(lines)[0])
+                        summary_file.write(" (last 1 hr. avg: "      + str(analyze_battery_data(lines)[1]) + ")\n")
+                        summary_file.write("    pH Sensor Data:    " + analyze_ph_data(lines)[0])
+                        summary_file.write(" (last 1 hr. avg: "      + str(analyze_ph_data(lines)[1]) + ")\n")
+                        summary_file.write("    Temperature Data:  " + analyze_temp_data(lines)[0])
+                        summary_file.write(" (last 1 hr. avg: "      + str(analyze_temp_data(lines)[1]) + ")\n\n")
         # Page break of sorts, and then just print most recent 30 mins of data (6 rows)
         summary_file.write("************************************************************\n\n")
         summary_file.write("                     Time,            pH,temp,batt,pHmV\n")       
