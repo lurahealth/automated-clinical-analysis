@@ -26,7 +26,7 @@ def parse_ID_relations_file(path):
 # Appends csv file at file_path_to_merge to device_id file in the
 # merged files location
 def append_csv_by_device_id(device_id, file_path_to_merge):
-    merged_filepath = "../lura_files/MERGED-CLINICAL-CSV/device_"
+    merged_filepath = "/home/ubuntu/lura_files/MERGED-CLINICAL-CSV/device_"
     merged_file = merged_filepath + device_id + ".csv"
     with open(file_path_to_merge, mode='r') as new_file:
         new_csv_data = new_file.read()
@@ -37,7 +37,7 @@ def append_csv_by_device_id(device_id, file_path_to_merge):
 # Search directory and subdirectories for pH receiver data,
 # the device ID files could be in any patient ID subdirectory
 def collect_patient_csv_files(patient_ids, device_ids):
-    path = "../lura_files/" # this is bad but easier to test across hardwares
+    path = "/home/ubuntu/lura_files/" # this is bad but easier to test across hardwares
     id_prefix = path + "ble-receiver"
     tablet_id = "clinical-tabletA"     # Make sure to check the tablet too :)
     for patient_id in patient_ids:
@@ -63,8 +63,16 @@ def clean_up_csv_formatting(full_file_path, root_path, device_file):
             temp_file.write(correct_header) # give it the right header
             # Write everything except lines with headers or empty newlines
             for line in dirty_file:
-                if current_header not in line and line != '\n':
-                    temp_file.write(line)
+#                if line.count(':') != 2:
+#                    print("** CHECK DEVICE: " + device_file)
+                if current_header not in line and line != '\n' and line.count(':') == 2:
+                #if current_header not in line and line != '\n':
+                    if line.count('\n') != 1:
+                        funky_lines = line.split(',')
+                        for funky_line in funky_lines:
+                            temp_file.write(funky_line + "\n")
+                    else:
+                        temp_file.write(line)
     # use pandas to sort by timestamp, delete CSVs, then write final CSV
     df = pd.read_csv(temp_filename)
     df.sort_values(["Time"], inplace=True, ascending=False)
@@ -73,10 +81,17 @@ def clean_up_csv_formatting(full_file_path, root_path, device_file):
     df.to_csv(full_file_path, index=False)
                     
         
+def check_devices_immediately_postcal(patient_ids, device_ids):
+    print("check devices post-cal")
+
+
+def remove_duplicate_lines():
+    print("check duplicate lines")
+
 # Cleans up file formatting, empty lines, etc then sorts data by timestamp
 # Data is sorted in descending order, i.e. most recent data is at the top
 def sort_merged_csv_files_by_date():
-    root_path = "../lura_files/MERGED-CLINICAL-CSV/"
+    root_path = "/home/ubuntu/lura_files/MERGED-CLINICAL-CSV/"
     files_dir = os.listdir(root_path)
     for device_file in files_dir:
         full_file_path = root_path + device_file
@@ -84,22 +99,26 @@ def sort_merged_csv_files_by_date():
 
 # delete em all haha        
 def reset_files():
-    root_path = "../lura_files/MERGED-CLINICAL-CSV/"
+    root_path = "/home/ubuntu/lura_files/MERGED-CLINICAL-CSV/"
     for file_name in os.listdir(root_path):
         os.remove(os.path.join(root_path, file_name))
         
 def return_average(lines, col):
     average = 0
-    for i in range(1, 13):
+    running_avg_pts = 13
+    num_lines = len(lines)
+    if num_lines < 13:
+        running_avg_pts = num_lines - 1
+    for i in range(1, running_avg_pts):
         average = average + float(lines[i].split(',')[col])
-    average = average / 12
+    average = average / (running_avg_pts - 1) 
     return round(average,2)
 
 def check_threshold(lines, low_thresh, high_thresh, col):
-    if float(lines[1].split(',')[col]) > low_thresh and float(lines[1].split(',')[col]) < high_thresh:
-        return "good"
-    else:
-        return "NEEDS REVIEW"
+        if float(lines[1].split(',')[col]) > low_thresh and float(lines[1].split(',')[col]) < high_thresh:
+            return "good"
+        else:
+            return "NEEDS REVIEW"
 
 # Return "good" or "NEEDS REVIEW" , and last 1hr average (12 rows of data)
 def analyze_ph_data(lines):
@@ -132,7 +151,7 @@ def analyze_temp_data(lines):
 # Indicates if device is "good" or needs further analysis
 # Writes results to a summary .txt file, with the most recent 30mins of data (6 rows)
 def run_simple_analysis(patient_ids, device_ids):
-    root_path     = "../lura_files/MERGED-CLINICAL-CSV/"
+    root_path     = "/home/ubuntu/lura_files/MERGED-CLINICAL-CSV/"
     summary_fname = "ANALYSIS_SUMMARY.txt"
     # Create the summary file and add in a title/whatever to begin
     with open(root_path + summary_fname, mode='a') as summary_file:
@@ -164,7 +183,10 @@ def run_simple_analysis(patient_ids, device_ids):
                     summary_file.write("(Device " + curr_device_id + ") - - - - - - - - - - - - - - - - - - - - - - - -\n")
                     with open(root_path + device_csv, mode='r') as csv_file:
                         lines = csv_file.readlines()
-                        for i in range(1,5):
+                        lines_to_print = 5
+                        if len(lines) < 5:
+                            lines_to_print = len(lines)
+                        for i in range(1,lines_to_print):
                             summary_file.write("                  " + lines[i])
                         summary_file.write("\n")    
                         
@@ -185,6 +207,8 @@ def main(argv):
      reset_files() # delete old summaries and update with brand new fresh files
      collect_patient_csv_files(patient_ids, device_ids)
      sort_merged_csv_files_by_date()
+     remove_duplicate_lines()
+     check_devices_immediately_postcal(patient_ids, device_ids)
      run_simple_analysis(patient_ids, device_ids)
      
 
