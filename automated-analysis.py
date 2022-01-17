@@ -37,9 +37,10 @@ def append_csv_by_device_id(device_id, file_path_to_merge):
 # Search directory and subdirectories for pH receiver data,
 # the device ID files could be in any patient ID subdirectory
 def collect_patient_csv_files(patient_ids, device_ids):
-    path = "/home/ubuntu/lura_files/" # this is bad but easier to test across hardwares
+    path = "/home/ubuntu/lura_files/"   # this is bad but easier to test across hardwares
     id_prefix = path + "ble-receiver"
-    tablet_id = "clinical-tabletA"     # Make sure to check the tablet too :)
+    tablet_id = "clinical-tabletA"      # Make sure to check the tablet too :)
+    patient_ids = list(set(patient_ids)) # Remove possible patient ID duplicates
     for patient_id in patient_ids:
         # search ph receiver directory for all active pH retainers
         for device_id in device_ids:
@@ -80,14 +81,6 @@ def clean_up_csv_formatting(full_file_path, root_path, device_file):
     os.remove(temp_filename)
     df.to_csv(full_file_path, index=False)
                     
-        
-def check_devices_immediately_postcal(patient_ids, device_ids):
-    print("check devices post-cal")
-
-
-def remove_duplicate_lines():
-    print("check duplicate lines")
-
 # Cleans up file formatting, empty lines, etc then sorts data by timestamp
 # Data is sorted in descending order, i.e. most recent data is at the top
 def sort_merged_csv_files_by_date():
@@ -207,10 +200,7 @@ def main(argv):
      reset_files() # delete old summaries and update with brand new fresh files
      collect_patient_csv_files(patient_ids, device_ids)
      sort_merged_csv_files_by_date()
-     remove_duplicate_lines()
-     check_devices_immediately_postcal(patient_ids, device_ids)
      run_simple_analysis(patient_ids, device_ids)
-     
 
 if __name__ == "__main__":
     main(sys.argv[:])
