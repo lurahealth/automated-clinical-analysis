@@ -100,6 +100,8 @@ def return_average(lines, col):
     average = 0
     running_avg_pts = 13
     num_lines = len(lines)
+    if num_lines == 2:
+        return round(float(lines[1].split(',')[col]))
     if num_lines < 13:
         running_avg_pts = num_lines - 1
     for i in range(1, running_avg_pts):
